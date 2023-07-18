@@ -1,38 +1,28 @@
-const multer = require('multer')
+const path = require("path");
 
-const APIError = require("../utils/APIError")
+const multer = require("multer");
 
 const storage = multer.diskStorage({
-    filename(req, file, callback) {
-        callback(null, file.originalname)
-    }
+    destination: function (req, file, cb) {
+        cb(null, "./src/uploads/");
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const extension = path.extname(file.originalname);
+        cb(null, file.fieldname + "-" + uniqueSuffix + extension);
+        
+        const filename = `${file.fieldname}-${uniqueSuffix}${extension}`
+        req.body.image = `${req.protocol}://${req.get('host')}/${filename}`
+    },
+
+   
 });
 
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith("image")) cb(null, true);
-    else cb(new APIError("Add Only image ", 400), null);
+// Set up the multer middleware
+const upload = multer({ storage: storage });
+
+const uploadSingleImage = upload.single("image")
+
+module.exports = {
+    uploadSingleImage
 }
-
-const upload = multer({ fileFilter, storage });
-
-const uploadSingleImage = (fileName) => upload.single(fileName);
-
-// image processing
-const resizeImage = asyncHandler(async (req, res, next) => {
-    if (req.file) {
-        const filename = `category--${uuidv4()}--${Date.now()}.jpeg`;
-        await sharp(req.file.buffer)
-            .resize(600, 600)
-            .toFormat('jpeg')
-            .jpeg({ quality: 95 })
-            .toFile(`src/uploads/categories/${filename}`);
-
-        // Save image into our db
-        const api = process.env.API
-        const basePath = `${req.protocol}://${req.get('host')}${api}/categories/${filename}`
-        req.body.image = basePath;
-    }
-    next();
-});
-
-export default uploadSingleImage

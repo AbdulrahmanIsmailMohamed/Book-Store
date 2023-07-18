@@ -9,13 +9,18 @@ const {
     book,
     books,
     countOfBooks
-} = require("../controllers/books.controller")
+} = require("../controllers/books.controller");
+const { uploadSingleImage } = require("../middleware/uploadImage");
 
 router.use(protectRoute)
 
 router
     .route("/")
-    .post(allowTo("admin"), addBook)
+    .post(
+        allowTo("admin"),
+        uploadSingleImage,
+        addBook
+    )
     .get(books)
 
 router.get("/get", countOfBooks)
